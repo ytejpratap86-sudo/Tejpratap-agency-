@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Lead CRM | Tej Pratap</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A1428;--bg2:#0F1D3A;--line:rgba(255,255,255,.14);--blue:#2F6BFF;--b2:#6C96FF;--txt:#EEF3FF;--mut:#AEBBD8;--g:rgba(255,255,255,.06)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:400 1rem/1.55 "DM Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:Sora,system-ui,sans-serif;margin:0 0 .6rem}h1{font-size:1.4rem}h2{font-size:1.2rem}
+:focus-visible{outline:3px solid var(--b2);outline-offset:2px}
+.wrap{width:min(1100px,100% - 1.5rem);margin:0 auto;padding:1rem 0 3rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.8rem 0}
+.btn{background:var(--blue);color:#fff;border:1px solid transparent;border-radius:10px;padding:.6rem 1rem;font:700 .95rem "DM Sans",sans-serif;cursor:pointer;min-height:44px}
+.btn.s{background:var(--g);border-color:var(--line)}.btn.d{background:#C0394B}.btn:disabled{opacity:.6;cursor:wait}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:1rem}.tabs button{flex:none}.tabs [aria-selected=true]{background:var(--blue)}
+.cards{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.c{background:var(--g);border:1px solid var(--line);border-radius:14px;padding:1rem}.c b{display:block;font:700 1.8rem Sora,sans-serif}.c span{color:var(--mut);font-size:.9rem}
+.bar{display:grid;gap:.5rem;grid-template-columns:2fr 1fr 1fr 1fr;margin-bottom:1rem}
+input,select,textarea{width:100%;background:rgba(255,255,255,.07);color:#fff;border:1px solid var(--line);border-radius:10px;padding:.65rem .8rem;font:inherit;min-height:44px}
+select option{color:#000}[aria-invalid=true]{border-color:#FF7A8A}
+label{display:block;font-weight:500;margin-bottom:.2rem}.err{color:#FF9AA6;font-size:.85rem;min-height:1.1em}
+.lead{background:var(--g);border:1px solid var(--line);border-radius:14px;padding:.9rem;margin-bottom:.7rem;display:grid;gap:.4rem;grid-template-columns:2fr 1.4fr 1fr auto;align-items:center}
+.lead small{color:var(--mut);display:block}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:.1rem .6rem;font-size:.8rem;color:var(--b2)}
+.acts{display:flex;gap:.4rem;flex-wrap:wrap}.acts .btn{padding:.4rem .7rem;min-height:40px}
+.msg{padding:1rem;border-radius:12px;border:1px solid var(--line);background:var(--g);margin:1rem 0}.msg.bad{border-color:#FF7A8A}
+.empty{text-align:center;color:var(--mut);padding:2rem}
+dialog{background:var(--bg2);color:var(--txt);border:1px solid var(--line);border-radius:16px;width:min(640px,94vw);padding:1.2rem;max-height:92dvh}dialog::backdrop{background:rgba(5,10,22,.75)}
+.two{display:grid;gap:.7rem;grid-template-columns:1fr 1fr}form{display:grid;gap:.7rem}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem}dt{color:var(--mut)}dd{margin:0;overflow-wrap:anywhere}
+.pb{height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin-bottom:.2rem}.pb i{display:block;height:100%;background:var(--blue)}
+.pbar{display:grid;gap:.5rem;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:.5rem}.od{color:#FF9AA6}
+.pill[data-s="New"],.pill[data-s="Planning"],.pill[data-s="To Do"]{color:#8FB0FF;border-color:#4A80FF}
+.pill[data-s="Contacted"],.pill[data-s="In Progress"]{color:#5ED3F3;border-color:#5ED3F3}
+.pill[data-s="Qualified"],.pill[data-s="Won"],.pill[data-s="Completed"]{color:#5EE0A0;border-color:#3CC88C}
+.pill[data-s="Proposal Sent"],.pill[data-s="Awaiting Client"],.pill[data-s="Internal Review"],.pill[data-s="Review"],.pill[data-s="High"]{color:#FFC857;border-color:#FFC857}
+.pill[data-s="Lost"],.pill[data-s="Cancelled"],.pill[data-s="Urgent"]{color:#FF9AA6;border-color:#FF7A8A}
+@media(max-width:760px){.bar,.lead,.two{grid-template-columns:1fr}dl{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap" id="app"><p class="empty">Loading...</p></div>
+<dialog id="dlg" aria-labelledby="dt"><h2 id="dt"></h2><div id="db"></div></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script>
+/* CONFIG: the anon key is public by design. NEVER put a service-role key here. Security comes from RLS (see schema.sql). */
+const SUPABASE_URL = "https://wjtvbowpjpebycuyuzmj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_o3dHmj4AjDxDYhoREgU3xg_MKYRJ6jV"; // publishable key: safe in frontend; RLS protects the data
+const ST=['New','Contacted','Qualified','Proposal Sent','Won','Lost'];
+const SV=['Website Development','E-commerce Website Development','Website Redesign','SEO and Local SEO','Digital Marketing','Social Media Marketing','AI Automation','Website Maintenance','Other'];
+const BG=['Not sure yet','Under 500','500 to 1,500','1,500 to 5,000','5,000+'];
+const $=(s,r=document)=>r.querySelector(s),app=$('#app'),dlg=$('#dlg');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0'),today=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const fmtD=d=>d?new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'Not set';
+const fmtT=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+let sb,leads=[],tab='overview',F={q:'',st:'',sv:'',sort:'desc'},note='';
+
+function setup(){app.innerHTML=`<h1>Lead CRM</h1><div class="msg bad" role="alert"><b>Backend not configured.</b><p>Set SUPABASE_URL and SUPABASE_ANON_KEY at the top of this file, then run schema.sql in your Supabase project. Until then no data is stored.</p></div>`}
+function login(msg=''){app.innerHTML=`<div style="max-width:380px;margin:12vh auto 0"><h1>Admin sign in</h1><form id="lf" novalidate><div><label for="e">Email</label><input id="e" type="email" autocomplete="username"></div><div><label for="p">Password</label><input id="p" type="password" autocomplete="current-password"></div><div class="err" id="le" role="alert">${esc(msg)}</div><button class="btn" id="lb">Sign in</button></form></div>`;
+ $('#lf').onsubmit=async e=>{e.preventDefault();const b=$('#lb');b.disabled=true;b.textContent='Signing in...';
+  const {error}=await sb.auth.signInWithPassword({email:$('#e').value.trim(),password:$('#p').value});
+  if(error){$('#le').textContent='Sign in failed. Check your email and password.';b.disabled=false;b.textContent='Sign in';}else boot();};}
+async function boot(){
+ const {data:{session}}=await sb.auth.getSession();if(!session)return login();
+ const {data:adm,error:ae}=await sb.from('admins').select('user_id').eq('user_id',session.user.id).maybeSingle();
+ if(ae||!adm){await sb.auth.signOut();return login('This account is not an authorised admin.');}
+ app.innerHTML='<p class="empty">Loading leads...</p>';await load();}
+async function load(){const {data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});
+ if(error){app.innerHTML=`<div class="msg bad" role="alert">Could not load leads: ${esc(error.message)} <button class="btn s" data-a="reload">Retry</button></div>`;return;}
+ leads=data;await PM.load();await CL.load();await EQ.load();await NT.load();render();}
+const open=l=>!['Won','Lost'].includes(l.status);
+function stats(){const c=s=>leads.filter(l=>l.status===s).length,t=today();
+ return [['Total leads',leads.length],['New',c('New')],['Contacted',c('Contacted')],['Qualified',c('Qualified')],['Won projects',c('Won')],['Lost',c('Lost')],['Follow-ups due',leads.filter(l=>open(l)&&l.follow_up_date&&l.follow_up_date<=t).length]];}
+function row(l){return `<article class="lead"><div><b>${esc(l.full_name)}</b><small>${esc(l.business_name||'No business name')}</small><small>${esc(l.email)}${l.phone?' | '+esc(l.phone):''}</small></div>
+<div>${esc(l.service)}<small>Follow-up: ${fmtD(l.follow_up_date)}</small></div>
+<div><label class="sr" for="s${l.id}" style="position:absolute;left:-999px">Status for ${esc(l.full_name)}</label><select id="s${l.id}" data-a="status" data-id="${l.id}">${ST.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('')}</select></div>
+<div class="acts"><button class="btn s" data-a="view" data-id="${l.id}">View</button><button class="btn s" data-a="edit" data-id="${l.id}">Edit</button><button class="btn d" data-a="del" data-id="${l.id}">Delete</button></div></article>`}
+function render(){
+ const t=today(),tabs=[['overview','Overview'],['leads','Leads'],['follow','Follow-ups'],['projects','Projects'],['clients','Clients'],['emails','Emails']];
+ let body='';
+ if(tab==='overview'){body=`<div class="cards">${stats().map(s=>`<div class="c"><b>${s[1]}</b><span>${s[0]}</span></div>`).join('')}</div>${leads.length?'':'<p class="empty">No leads yet. Add your first lead from the Leads tab.</p>'}`}
+ if(tab==='leads'){let r=leads.filter(l=>(!F.st||l.status===F.st)&&(!F.sv||l.service===F.sv)&&(!F.q||[l.full_name,l.business_name,l.email,l.phone].join(' ').toLowerCase().includes(F.q.toLowerCase())));
+  if(F.sort==='asc')r=[...r].reverse();
+  body=`<div class="bar"><div><label for="q">Search</label><input id="q" type="search" value="${esc(F.q)}" placeholder="Name, business, email, phone"></div><div><label for="fs">Status</label><select id="fs"><option value="">All</option>${ST.map(s=>`<option${F.st===s?' selected':''}>${s}</option>`).join('')}</select></div><div><label for="fv">Service</label><select id="fv"><option value="">All</option>${SV.map(s=>`<option${F.sv===s?' selected':''}>${s}</option>`).join('')}</select></div><div><label for="so">Sort</label><select id="so"><option value="desc"${F.sort==='desc'?' selected':''}>Newest first</option><option value="asc"${F.sort==='asc'?' selected':''}>Oldest first</option></select></div></div>
+  <button class="btn" data-a="new" style="margin-bottom:1rem">Add lead</button>${r.length?r.map(row).join(''):`<p class="empty">${leads.length?'No leads match these filters.':'No leads yet.'}</p>`}`}
+ if(tab==='follow'){const f=leads.filter(l=>open(l)&&l.follow_up_date).sort((a,b)=>a.follow_up_date.localeCompare(b.follow_up_date));
+  const g=[['Overdue',f.filter(l=>l.follow_up_date<t)],['Due today',f.filter(l=>l.follow_up_date===t)],['Upcoming',f.filter(l=>l.follow_up_date>t)]];
+  body=g.map(([n,a])=>`<h2>${n} (${a.length})</h2>${a.length?a.map(row).join(''):'<p class="empty">Nothing here.</p>'}`).join('')+'<p class="msg">This list updates only when you open it. No notifications or automatic reminders are sent.</p>'}
+ if(tab==='projects')body=PM.html();
+ if(tab==='clients')body=CL.html();
+ if(tab==='emails')body=EQ.html();
+ app.innerHTML=`<div class="top"><h1>Agency CRM</h1><div class="acts">${NT.bell()}<button class="btn s" data-a="out">Sign out</button></div></div>${NT.panel()}<div class="tabs" role="tablist">${tabs.map(([k,n])=>`<button class="btn s" role="tab" aria-selected="${tab===k}" data-a="tab" data-t="${k}">${n}</button>`).join('')}</div>${note?`<div class="msg" role="status">${esc(note)}</div>`:''}${body}`;note='';
+ if(tab==='projects')PM.bind();
+ if(tab==='clients')CL.bind();
+ if(tab==='emails')EQ.bind();
+ if(tab==='leads'){const bind=(id,k)=>{const el=$('#'+id);el.oninput=el.onchange=()=>{F[k]=el.value;const p=el.selectionStart;render();const n=$('#'+id);n.focus();if(k==='q')n.setSelectionRange(p,p);};};bind('q','q');bind('fs','st');bind('fv','sv');bind('so','sort');}
+}
+function form(l){const v=k=>esc(l?.[k]||''),o=(a,c)=>a.map(x=>`<option${x===c?' selected':''}>${x}</option>`).join('');
+ $('#dt').textContent=l?'Edit lead':'Add lead';
+ $('#db').innerHTML=`<form id="lf2" novalidate><div class="two"><div><label for="fn">Full name *</label><input id="fn" value="${v('full_name')}"><div class="err" id="e-fn"></div></div><div><label for="bn">Business name</label><input id="bn" value="${v('business_name')}"></div></div>
+<div class="two"><div><label for="em">Email *</label><input id="em" type="email" value="${v('email')}"><div class="err" id="e-em"></div></div><div><label for="ph">Phone number</label><input id="ph" type="tel" value="${v('phone')}"><div class="err" id="e-ph"></div></div></div>
+<div class="two"><div><label for="sv">Requested service *</label><select id="sv"><option value="">Select</option>${o(SV,l?.service)}</select><div class="err" id="e-sv"></div></div><div><label for="bd">Budget range</label><select id="bd"><option value="">Select</option>${o(BG,l?.budget)}</select></div></div>
+<div><label for="ds">Project description *</label><textarea id="ds" rows="3">${v('description')}</textarea><div class="err" id="e-ds"></div></div>
+<div class="two"><div><label for="so2">Lead source</label><input id="so2" value="${esc(l?.source||'Manual')}"></div><div><label for="st">Status</label><select id="st">${o(ST,l?.status||'New')}</select></div></div>
+<div><label for="fu">Follow-up date</label><input id="fu" type="date" value="${v('follow_up_date')}"></div>
+<div><label for="nt">Internal notes</label><textarea id="nt" rows="3">${v('notes')}</textarea></div>
+<div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn" id="sv2">Save lead</button><button type="button" class="btn s" data-a="close">Cancel</button></div></form>`;
+ dlg.showModal();
+ $('#lf2').onsubmit=async e=>{e.preventDefault();const g=id=>$('#'+id).value.trim(),er={};
+  if(!g('fn'))er.fn='Enter the lead\'s name.';if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('em')))er.em='Enter a valid email.';
+  if(g('ph')&&!/^[+\d][\d\s()-]{6,17}$/.test(g('ph')))er.ph='Enter a valid phone number or leave blank.';
+  if(!g('sv'))er.sv='Choose a service.';if(!g('ds'))er.ds='Describe the project.';
+  ['fn','em','ph','sv','ds'].forEach(k=>{$('#'+k).setAttribute('aria-invalid',!!er[k]);$('#e-'+k).textContent=er[k]||''});
+  const bad=Object.keys(er)[0];if(bad)return $('#'+bad).focus();
+  const rec={full_name:g('fn'),business_name:g('bn')||null,email:g('em'),phone:g('ph')||null,service:g('sv'),budget:g('bd')||null,description:g('ds'),source:g('so2')||'Manual',status:g('st'),follow_up_date:g('fu')||null,notes:g('nt')||null};
+  const b=$('#sv2');b.disabled=true;b.textContent='Saving...';
+  const {error}=l?await sb.from('leads').update(rec).eq('id',l.id):await sb.from('leads').insert(rec);
+  if(error){$('#fe').textContent='Could not save: '+error.message;b.disabled=false;b.textContent='Save lead';return;}
+  dlg.close();note=l?'Lead updated.':'Lead added.';await load();};}
+function view(l){$('#dt').textContent=l.full_name;const r=(k,v)=>`<dt>${k}</dt><dd>${esc(v||'Not set')}</dd>`;
+ $('#db').innerHTML=`<dl>${r('Business',l.business_name)}${r('Email',l.email)}${r('Phone',l.phone)}${r('Service',l.service)}${r('Budget',l.budget)}${r('Source',l.source)}${r('Status',l.status)}${r('Follow-up',fmtD(l.follow_up_date))}${r('Created',fmtT(l.created_at))}${r('Description',l.description)}${r('Notes',l.notes)}</dl><div class="acts" style="margin-top:1rem"><button class="btn" data-a="edit" data-id="${l.id}">Edit</button><button class="btn s" data-a="close">Close</button></div>`;dlg.showModal();}
+function del(l){$('#dt').textContent='Delete this lead?';$('#db').innerHTML=`<p>${esc(l.full_name)} will be permanently deleted. This cannot be undone.</p><div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn d" data-a="delok" data-id="${l.id}">Delete lead</button><button class="btn s" data-a="close">Cancel</button></div>`;dlg.showModal();}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b||b.tagName==='SELECT')return;const a=b.dataset.a,l=leads.find(x=>x.id===b.dataset.id);
+ if(a==='tab'){tab=b.dataset.t;render();}else if(a==='new')form();else if(a==='view')view(l);else if(a==='edit'){dlg.close();form(l);}else if(a==='del')del(l);else if(a==='close')dlg.close();
+ else if(a==='reload')load();else if(a==='out'){await sb.auth.signOut();leads=[];login();}
+ else if(a==='delok'){b.disabled=true;const {error}=await sb.from('leads').delete().eq('id',l.id);if(error){$('#fe').textContent='Could not delete: '+error.message;b.disabled=false;return;}dlg.close();note='Lead deleted.';await load();}});
+document.addEventListener('change',async e=>{const s=e.target;if(s.dataset.a!=='status')return;
+ const {error}=await sb.from('leads').update({status:s.value}).eq('id',s.dataset.id);
+ note=error?'Could not update status: '+error.message:'Status updated.';await load();});
+const PM=(()=>{
+const TZ='Asia/Kolkata',CUR='₹'; /* CONFIG: business timezone and currency symbol */
+const PT=['Business Website','E-commerce Website','Website Redesign','SEO','Digital Marketing','Social Media Marketing','AI Automation','Website Maintenance','Custom Project'];
+const PS=['Planning','In Progress','Awaiting Client','Internal Review','Completed','On Hold','Cancelled'],TS=['To Do','In Progress','Review','Completed'],PR=['Low','Medium','High','Urgent'];
+const P={projects:[],tasks:[],pays:[],notes:[],err:'',cur:null,sub:'Overview',F:{q:'',st:'',ty:'',pr:'',dl:'',sort:'new'},tf:'',ok:null};
+const tdy=()=>new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(new Date());
+const addD=(d,n)=>{const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
+const mon=n=>CUR+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2});
+const sel=(id,a,c,blank)=>`<select id="${id}">${blank?`<option value="">${blank}</option>`:''}${a.map(x=>`<option${x===c?' selected':''}>${x}</option>`).join('')}</select>`;
+const badge=s=>`<span class="pill" data-s="${esc(s)}">${esc(s)}</span>`;
+const openP=p=>!['Completed','Cancelled'].includes(p.status);
+const tasksOf=id=>P.tasks.filter(t=>t.project_id===id),paysOf=id=>P.pays.filter(x=>x.project_id===id);
+const recv=id=>paysOf(id).filter(x=>x.confirmed).reduce((s,x)=>s+Number(x.amount),0);
+const prog=id=>{const t=tasksOf(id);return t.length?Math.round(t.filter(x=>x.status==='Completed').length/t.length*100):null};
+const bar=id=>{const v=prog(id);return v===null?'<small>No tasks yet</small>':`<div class="pb" role="progressbar" aria-label="Progress" aria-valuenow="${v}" aria-valuemin="0" aria-valuemax="100"><i style="width:${v}%"></i></div><small>${v}% complete</small>`};
+const client=p=>{const l=leads.find(x=>x.id===p.lead_id);return l?{name:l.full_name,biz:l.business_name,email:l.email,phone:l.phone,linked:1}:{name:p.client_name,biz:p.client_business,email:p.client_email,phone:p.client_phone}};
+const modal=(t,h)=>{$('#dt').textContent=t;$('#db').innerHTML=h;dlg.showModal()};
+const ask=(m,fn)=>{P.ok=fn;modal('Please confirm',`<p>${esc(m)}</p><div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn d" data-pm="ok">Delete</button><button class="btn s" data-a="close">Cancel</button></div>`)};
+async function load(){const q=t=>sb.from(t).select('*');const r=await Promise.all([q('projects').order('created_at',{ascending:false}),q('project_tasks'),q('project_payments').order('paid_on',{ascending:false}),q('project_notes').order('created_at',{ascending:false})]);
+ const e=r.find(x=>x.error);P.err=e?e.error.message:'';if(!e)[P.projects,P.tasks,P.pays,P.notes]=r.map(x=>x.data)}
+async function run(p,b,okm,after){if(b){b.disabled=true}const {error}=await p;if(error){const f=$('#fe');if(f)f.textContent='Could not save: '+error.message;else note='Error: '+error.message;if(b)b.disabled=false;render();return false}
+ dlg.close();note=okm;await load();render();return true}
+function stats(){const t=tdy(),w=addD(t,7),o=P.projects.filter(openP),live=P.projects.filter(p=>p.status!=='Cancelled'),c=a=>P.projects.filter(p=>a.includes(p.status)).length;
+ return [['Total projects',P.projects.length],['Active',c(['Planning','In Progress','Awaiting Client'])],['In review',c(['Internal Review'])],['Completed',c(['Completed'])],['On hold',c(['On Hold'])],['Deadlines in 7 days',o.filter(p=>p.deadline&&p.deadline>=t&&p.deadline<=w).length],['Overdue',o.filter(p=>p.deadline&&p.deadline<t).length],['Total value',mon(live.reduce((s,p)=>s+Number(p.total_fee),0))],['Payments received',mon(live.reduce((s,p)=>s+recv(p.id),0))],['Outstanding',mon(live.reduce((s,p)=>s+Math.max(Number(p.total_fee)-recv(p.id),0),0))]]}
+function deadlines(){const t=tdy(),w=addD(t,7),o=P.projects.filter(p=>openP(p)&&p.deadline).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+ const g=(n,a,cls)=>`<div class="c"><b style="font-size:1rem" ${cls?'class="'+cls+'"':''}>${n} (${a.length})</b>${a.length?a.map(p=>`<div><a href="#" data-pm="open" data-id="${p.id}">${esc(p.name)}</a> <small>${fmtD(p.deadline)}</small></div>`).join(''):'<span>None</span>'}</div>`;
+ const ms=P.tasks.filter(x=>x.status!=='Completed'&&x.due_date&&x.due_date>=t).sort((a,b)=>a.due_date.localeCompare(b.due_date)).slice(0,5);
+ return `<h2>Deadlines <small>(${TZ})</small></h2><div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${g('Overdue',o.filter(p=>p.deadline<t),'od')}${g('Due today',o.filter(p=>p.deadline===t))}${g('Next 7 days',o.filter(p=>p.deadline>t&&p.deadline<=w))}<div class="c"><b style="font-size:1rem">Upcoming milestones (${ms.length})</b>${ms.length?ms.map(x=>`<div>${esc(x.title)} <small>${fmtD(x.due_date)}</small></div>`).join(''):'<span>None</span>'}</div></div><p class="msg" style="font-size:.85rem">Deadlines are checked when you open this page. No automatic reminders are sent.</p>`}
+function listHtml(){const F=P.F,t=tdy();
+ let r=P.projects.filter(p=>{const c=client(p);return(!F.st||p.status===F.st)&&(!F.ty||p.project_type===F.ty)&&(!F.pr||p.priority===F.pr)&&(!F.q||[p.name,c.name,c.biz].join(' ').toLowerCase().includes(F.q.toLowerCase()))&&(!F.dl||(F.dl==='none'?!p.deadline:F.dl==='overdue'?openP(p)&&p.deadline&&p.deadline<t:F.dl==='today'?p.deadline===t:p.deadline&&p.deadline>=t&&p.deadline<=addD(t,7)))});
+ r=[...r].sort(F.sort==='old'?(a,b)=>a.created_at.localeCompare(b.created_at):F.sort==='dl'?(a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999'):(a,b)=>b.created_at.localeCompare(a.created_at));
+ const f=(id,l,h)=>`<div><label for="${id}">${l}</label>${h}</div>`,o=(a,c,b)=>`<option value="">${b}</option>`+a.map(x=>`<option${x===c?' selected':''}>${x}</option>`).join('');
+ return `<div class="cards">${stats().map(s=>`<div class="c"><b>${s[1]}</b><span>${s[0]}</span></div>`).join('')}</div>${deadlines()}<h2 style="margin-top:1.5rem">Projects</h2>
+ <div class="pbar">${f('pq','Search',`<input id="pq" type="search" value="${esc(F.q)}" placeholder="Project, client, business">`)}${f('pst','Status',`<select id="pst">${o(PS,F.st,'All')}</select>`)}${f('pty','Type',`<select id="pty">${o(PT,F.ty,'All')}</select>`)}${f('ppr','Priority',`<select id="ppr">${o(PR,F.pr,'All')}</select>`)}${f('pdl','Deadline',`<select id="pdl"><option value="">Any</option>${[['overdue','Overdue'],['today','Today'],['week','Next 7 days'],['none','No deadline']].map(([v,l])=>`<option value="${v}"${F.dl===v?' selected':''}>${l}</option>`).join('')}</select>`)}${f('pso','Sort',`<select id="pso">${[['new','Newest'],['old','Oldest'],['dl','Upcoming deadline']].map(([v,l])=>`<option value="${v}"${F.sort===v?' selected':''}>${l}</option>`).join('')}</select>`)}</div>
+ <button class="btn" data-pm="newp" style="margin:.5rem 0 1rem">New project</button>
+ ${r.length?r.map(p=>`<article class="lead"><div><b>${esc(p.name)}</b><small>${esc(client(p).name||'')}</small><small>${esc(p.project_type)}</small></div><div>${badge(p.status)} ${badge(p.priority)}<small>Deadline: ${fmtD(p.deadline)}</small></div><div>${bar(p.id)}</div><div class="acts"><button class="btn s" data-pm="open" data-id="${p.id}">Open</button></div></article>`).join(''):`<p class="empty">${P.projects.length?'No projects match these filters.':'No projects yet. Create your first project.'}</p>`}`}
+function detail(p){const c=client(p),ts=tasksOf(p.id),done=ts.filter(x=>x.status==='Completed').length,rc=recv(p.id),subs=['Overview','Tasks','Timeline','Payments','Client Information','Notes'];let b='';
+ if(P.sub==='Overview')b=`<div class="cards"><div class="c"><b style="font-size:1rem">${badge(p.status)}</b><span>Status</span></div><div class="c"><b style="font-size:1rem">${fmtD(p.deadline)}</b><span>Deadline</span></div><div class="c"><b style="font-size:1rem">${ts.length?done+' done / '+(ts.length-done)+' pending':'No tasks'}</b><span>Tasks</span></div><div class="c"><b style="font-size:1rem">${mon(p.total_fee)}</b><span>Fee</span></div><div class="c"><b style="font-size:1rem">${mon(rc)}</b><span>Received</span></div><div class="c"><b style="font-size:1rem">${mon(Math.max(p.total_fee-rc,0))}</b><span>Outstanding</span></div></div><div style="margin:1rem 0">${bar(p.id)}</div><dl><dt>Type</dt><dd>${esc(p.project_type)}</dd><dt>Priority</dt><dd>${esc(p.priority)}</dd><dt>Start</dt><dd>${fmtD(p.start_date)}</dd><dt>Created</dt><dd>${fmtT(p.created_at)}</dd><dt>Updated</dt><dd>${fmtT(p.updated_at)}</dd><dt>Description</dt><dd>${esc(p.description||'Not set')}</dd></dl>`;
+ if(P.sub==='Tasks'){const l=ts.filter(x=>!P.tf||x.status===P.tf).sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999'));
+  b=`<p>${done} completed, ${ts.length-done} pending</p><div class="acts" style="margin-bottom:1rem"><button class="btn" data-pm="newt">Add task</button><select id="ptf" aria-label="Filter tasks" style="width:auto"><option value="">All statuses</option>${TS.map(x=>`<option${P.tf===x?' selected':''}>${x}</option>`).join('')}</select></div>${l.length?l.map(x=>`<article class="lead"><div><b>${esc(x.title)}</b><small>${esc(x.assigned_to||'Unassigned')}</small></div><div>${badge(x.priority)}<small>Due: ${fmtD(x.due_date)}</small></div><div><select data-pmchg="task" data-id="${x.id}" aria-label="Task status">${TS.map(s=>`<option${s===x.status?' selected':''}>${s}</option>`).join('')}</select></div><div class="acts"><button class="btn s" data-pm="edt" data-id="${x.id}">Edit</button><button class="btn d" data-pm="delt" data-id="${x.id}">Delete</button></div></article>`).join(''):'<p class="empty">No tasks to show.</p>'}`}
+ if(P.sub==='Timeline'){const ev=[[p.start_date,'Project start'],[p.deadline,'Project deadline'],...ts.filter(x=>x.due_date).map(x=>[x.due_date,'Task due: '+x.title]),...ts.filter(x=>x.completed_at).map(x=>[x.completed_at.slice(0,10),'Task completed: '+x.title]),...paysOf(p.id).map(x=>[x.paid_on,'Payment recorded: '+mon(x.amount)])].filter(e=>e[0]).sort((a,b)=>a[0].localeCompare(b[0]));
+  b=ev.length?`<ul>${ev.map(e=>`<li><b>${fmtD(e[0])}</b> ${esc(e[1])}</li>`).join('')}</ul>`:'<p class="empty">No dated events yet.</p>'}
+ if(P.sub==='Payments'){const l=paysOf(p.id);b=`<div class="cards"><div class="c"><b style="font-size:1rem">${mon(p.total_fee)}</b><span>Agreed fee</span></div><div class="c"><b style="font-size:1rem">${mon(rc)}</b><span>Confirmed received</span></div><div class="c"><b style="font-size:1rem">${mon(p.total_fee-rc)}</b><span>Outstanding</span></div></div><p class="msg" style="font-size:.85rem">Records only. Payments are not verified against any bank or gateway.</p><button class="btn" data-pm="newpay">Record payment</button>${l.length?l.map(x=>`<article class="lead"><div><b>${mon(x.amount)}</b><small>${fmtD(x.paid_on)}</small></div><div>${esc(x.method||'No method')}<small>${esc(x.reference||'')}</small></div><div>${x.confirmed?'Confirmed':'Not confirmed'}<small>${esc(x.notes||'')}</small></div><div class="acts"><button class="btn d" data-pm="delpay" data-id="${x.id}">Delete</button></div></article>`).join(''):'<p class="empty">No payments recorded.</p>'}`}
+ if(P.sub==='Client Information')b=`<dl><dt>Name</dt><dd>${esc(c.name)}</dd><dt>Business</dt><dd>${esc(c.biz||'Not set')}</dd><dt>Email</dt><dd>${esc(c.email||'Not set')}</dd><dt>Phone</dt><dd>${esc(c.phone||'Not set')}</dd><dt>Source</dt><dd>${c.linked?'Linked lead':'Entered on project'}</dd></dl>`;
+ if(P.sub==='Notes'){const l=P.notes.filter(n=>n.project_id===p.id);b=`<form id="nf"><label for="nb">Add a note</label><textarea id="nb" rows="3"></textarea><div class="err" id="ne"></div><button class="btn">Save note</button></form>${l.length?l.map(n=>`<article class="lead" style="grid-template-columns:1fr auto"><div>${esc(n.body)}<small>${fmtT(n.created_at)}</small></div><button class="btn d" data-pm="deln" data-id="${n.id}">Delete</button></article>`).join(''):'<p class="empty">No notes yet.</p>'}`}
+ return `<div class="top"><button class="btn s" data-pm="back">Back to projects</button><div class="acts"><select data-pmchg="pstatus" aria-label="Project status" style="width:auto">${PS.map(s=>`<option${s===p.status?' selected':''}>${s}</option>`).join('')}</select><button class="btn s" data-pm="editp">Edit</button><button class="btn d" data-pm="delp">Delete</button></div></div><h2>${esc(p.name)}</h2><div class="tabs" role="tablist">${subs.map(s=>`<button class="btn s" role="tab" aria-selected="${P.sub===s}" data-pm="sub" data-t="${s}">${s}</button>`).join('')}</div>${b}`}
+const html=()=>{if(P.err)return `<div class="msg bad" role="alert">Could not load projects: ${esc(P.err)}</div>`;const p=P.projects.find(x=>x.id===P.cur);return p?detail(p):listHtml()};
+function projForm(p){const v=k=>esc(p?.[k]??''),f=(id,l,h,e)=>`<div><label for="${id}">${l}</label>${h}<div class="err" id="e-${id}"></div></div>`;
+ modal(p?'Edit project':'New project',`<form id="pf" novalidate>${f('pn','Project name *',`<input id="pn" value="${v('name')}">`)}<div><label for="pl">Linked lead (optional)</label><select id="pl"><option value="">No linked lead</option>${leads.map(l=>`<option value="${l.id}"${l.id===p?.lead_id?' selected':''}>${esc(l.full_name)}${l.business_name?' - '+esc(l.business_name):''}</option>`).join('')}</select></div>
+ <div id="pcf" ${p?.lead_id?'hidden':''} style="display:grid;gap:.7rem"><div class="two">${f('pc','Client name *',`<input id="pc" value="${v('client_name')}">`)}${f('pb','Client business',`<input id="pb" value="${v('client_business')}">`)}</div><div class="two">${f('pe','Client email',`<input id="pe" type="email" value="${v('client_email')}">`)}${f('pp','Client phone',`<input id="pp" type="tel" value="${v('client_phone')}">`)}</div></div>
+ <div class="two"><div><label for="pt">Project type</label>${sel('pt',PT,p?.project_type)}</div><div><label for="ps">Status</label>${sel('ps',PS,p?.status||'Planning')}</div></div>${f('pd','Description',`<textarea id="pd" rows="3">${v('description')}</textarea>`)}
+ <div class="two">${f('sd','Start date',`<input id="sd" type="date" value="${v('start_date')}">`)}${f('dd','Deadline',`<input id="dd" type="date" value="${v('deadline')}">`)}</div>
+ <div class="two">${f('fee','Total project fee *',`<input id="fee" type="number" min="0" step="0.01" value="${p?p.total_fee:''}">`)}${p?'':f('ip','Initial payment',`<input id="ip" type="number" min="0" step="0.01" value="0">`)}</div><div><label for="pr">Priority</label>${sel('pr',PR,p?.priority||'Medium')}</div>
+ <div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn" id="sv3">Save project</button><button type="button" class="btn s" data-a="close">Cancel</button></div></form>`);
+ $('#pl').onchange=()=>{$('#pcf').hidden=!!$('#pl').value};
+ $('#pf').onsubmit=async e=>{e.preventDefault();const g=i=>$('#'+i)?.value.trim(),er={};
+  if(!g('pn'))er.pn='Enter a project name.';if(!g('pl')&&!g('pc'))er.pc='Enter a client name or pick a lead.';
+  const fee=Number(g('fee')),ip=Number(g('ip')||0);if(g('fee')===''||!(fee>=0))er.fee='Enter a fee of 0 or more.';else if(ip<0||ip>fee)er.ip='Initial payment must be between 0 and the fee.';
+  if(g('sd')&&g('dd')&&g('dd')<g('sd'))er.dd='Deadline cannot be before the start date.';
+  ['pn','pc','fee','ip','dd'].forEach(k=>{const el=$('#'+k);if(el){el.setAttribute('aria-invalid',!!er[k]);$('#e-'+k).textContent=er[k]||''}});
+  const bad=Object.keys(er)[0];if(bad)return $('#'+bad).focus();
+  const lid=g('pl')||null,rec={name:g('pn'),lead_id:lid,client_name:lid?null:g('pc'),client_business:lid?null:g('pb')||null,client_email:lid?null:g('pe')||null,client_phone:lid?null:g('pp')||null,project_type:g('pt'),status:g('ps'),description:g('pd')||null,start_date:g('sd')||null,deadline:g('dd')||null,total_fee:fee,priority:g('pr')};
+  const b=$('#sv3');b.disabled=true;b.textContent='Saving...';
+  if(p)return run(sb.from('projects').update(rec).eq('id',p.id),b,'Project updated.');
+  const {data,error}=await sb.from('projects').insert(rec).select().single();if(error){$('#fe').textContent='Could not save: '+error.message;b.disabled=false;b.textContent='Save project';return}
+  if(ip>0){const r2=await sb.from('project_payments').insert({project_id:data.id,amount:ip,paid_on:tdy(),method:'Initial payment'});if(r2.error)note='Project created, but the initial payment failed: '+r2.error.message;else note='Project created.'}else note='Project created.';
+  dlg.close();await load();P.cur=data.id;P.sub='Overview';render()}}
+function taskForm(t){const v=k=>esc(t?.[k]??'');modal(t?'Edit task':'Add task',`<form id="tf" novalidate><div><label for="tt">Task title *</label><input id="tt" value="${v('title')}"><div class="err" id="e-tt"></div></div><div><label for="td">Description</label><textarea id="td" rows="2">${v('description')}</textarea></div><div class="two"><div><label for="ta">Assigned person (optional)</label><input id="ta" value="${v('assigned_to')}"></div><div><label for="tdu">Due date</label><input id="tdu" type="date" value="${v('due_date')}"></div></div><div class="two"><div><label for="tp">Priority</label>${sel('tp',PR,t?.priority||'Medium')}</div><div><label for="ts">Status</label>${sel('ts',TS,t?.status||'To Do')}</div></div><label><input id="tv" type="checkbox" ${t?.client_visible?'checked':''} style="width:auto;min-height:0"> Visible to the client</label><div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn" id="sv4">Save task</button><button type="button" class="btn s" data-a="close">Cancel</button></div></form>`);
+ $('#tf').onsubmit=e=>{e.preventDefault();const g=i=>$('#'+i).value.trim();if(!g('tt')){$('#tt').setAttribute('aria-invalid',true);$('#e-tt').textContent='Enter a task title.';return $('#tt').focus()}
+  const rec={title:g('tt'),description:g('td')||null,assigned_to:g('ta')||null,due_date:g('tdu')||null,priority:g('tp'),status:g('ts'),client_visible:$('#tv').checked};
+  run(t?sb.from('project_tasks').update(rec).eq('id',t.id):sb.from('project_tasks').insert({...rec,project_id:P.cur}),$('#sv4'),t?'Task updated.':'Task added.')}}
+function payForm(){modal('Record payment',`<form id="yf" novalidate><div class="two"><div><label for="ya">Amount *</label><input id="ya" type="number" min="0.01" step="0.01"><div class="err" id="e-ya"></div></div><div><label for="yd">Payment date *</label><input id="yd" type="date" value="${tdy()}"><div class="err" id="e-yd"></div></div></div><div class="two"><div><label for="ym">Payment method</label><input id="ym"></div><div><label for="yr">Transaction reference (optional)</label><input id="yr"></div></div><div><label for="yn">Notes</label><textarea id="yn" rows="2"></textarea></div><label><input id="yc" type="checkbox" checked style="width:auto;min-height:0"> Confirmed received</label><div class="err" id="fe" role="alert"></div><div class="acts"><button class="btn" id="sv5">Save payment</button><button type="button" class="btn s" data-a="close">Cancel</button></div></form>`);
+ $('#yf').onsubmit=e=>{e.preventDefault();const g=i=>$('#'+i).value.trim(),a=Number(g('ya')),er={};if(!(a>0))er.ya='Enter an amount greater than 0.';if(!g('yd'))er.yd='Choose a date.';
+  ['ya','yd'].forEach(k=>{$('#'+k).setAttribute('aria-invalid',!!er[k]);$('#e-'+k).textContent=er[k]||''});const bad=Object.keys(er)[0];if(bad)return $('#'+bad).focus();
+  run(sb.from('project_payments').insert({project_id:P.cur,amount:a,paid_on:g('yd'),method:g('ym')||null,reference:g('yr')||null,notes:g('yn')||null,confirmed:$('#yc').checked}),$('#sv5'),'Payment recorded.')}}
+function bind(){const F=P.F;[['pq','q'],['pst','st'],['pty','ty'],['ppr','pr'],['pdl','dl'],['pso','sort']].forEach(([id,k])=>{const el=$('#'+id);if(!el)return;el.oninput=el.onchange=()=>{F[k]=el.value;const s=el.selectionStart;render();const n=$('#'+id);n.focus();if(k==='q')n.setSelectionRange(s,s)}});
+ const tf=$('#ptf');if(tf)tf.onchange=()=>{P.tf=tf.value;render()};
+ const nf=$('#nf');if(nf)nf.onsubmit=async e=>{e.preventDefault();const v=$('#nb').value.trim();if(!v){$('#ne').textContent='Write a note first.';return}const {error}=await sb.from('project_notes').insert({project_id:P.cur,body:v});if(error){$('#ne').textContent='Could not save: '+error.message;return}note='Note saved.';await load();render()}}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-pm]');if(!b)return;e.preventDefault();const a=b.dataset.pm,id=b.dataset.id,p=P.projects.find(x=>x.id===P.cur);
+ if(a==='open'){P.cur=id;P.sub='Overview';render()}else if(a==='back'){P.cur=null;render()}else if(a==='sub'){P.sub=b.dataset.t;render()}else if(a==='newp')projForm();else if(a==='editp')projForm(p);
+ else if(a==='newt')taskForm();else if(a==='edt')taskForm(P.tasks.find(x=>x.id===id));else if(a==='newpay')payForm();
+ else if(a==='delt')ask('Delete this task? This cannot be undone.',()=>sb.from('project_tasks').delete().eq('id',id));
+ else if(a==='delpay')ask('Delete this payment record? This cannot be undone.',()=>sb.from('project_payments').delete().eq('id',id));
+ else if(a==='deln')ask('Delete this note?',()=>sb.from('project_notes').delete().eq('id',id));
+ else if(a==='delp')ask('Delete this project with all its tasks, payments and notes? This cannot be undone.',()=>sb.from('projects').delete().eq('id',p.id));
+ else if(a==='ok'){const gone=P.ok.toString().includes("'projects'");if(await run(P.ok(),b,'Deleted.')&&gone)P.cur=null,render()}});
+document.addEventListener('change',async e=>{const s=e.target,k=s.dataset.pmchg;if(!k)return;
+ const r=k==='task'?await sb.from('project_tasks').update({status:s.value}).eq('id',s.dataset.id):await sb.from('projects').update({status:s.value}).eq('id',P.cur);
+ note=r.error?'Could not update status: '+r.error.message:'Status updated.';await load();render()});
+return {load,html,bind,projects:()=>P.projects,openProject:id=>{P.cur=id;P.sub='Overview'}}})();
+
+const CL=(()=>{
+const C={accts:[],reqs:[],ups:[],dl:[],err:''},RS=['Submitted','In Review','In Progress','Resolved'];
+async function load(){const q=(t,o)=>{let x=sb.from(t).select('*');return o?x.order(o,{ascending:false}):x};const r=await Promise.all([q('client_accounts','created_at'),q('support_requests','created_at'),q('project_updates','created_at'),sb.from('notification_deliveries').select('status')]);const e=r.find(x=>x.error);C.err=e?e.error.message:'';if(!e)[C.accts,C.reqs,C.ups,C.dl]=r.map(x=>x.data)}
+function html(){if(C.err)return `<div class="msg bad" role="alert">Could not load clients: ${esc(C.err)}</div>`;
+ const P=PM.projects(),dc=s=>C.dl.filter(x=>x.status===s).length,opt=a=>a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+ return `<div class="msg"><b>Email delivery</b><br>Queued: ${dc('queued')+dc('retry')} | Sent: ${dc('sent')} | Failed: ${dc('failed')}<br><small>Emails are queued in the database. Nothing is sent until the send-emails function and an email provider are configured. "Sent" means the provider accepted the message, not that it was delivered.</small></div><h2>Provision client access</h2><p class="msg" style="font-size:.9rem">First invite the client in Supabase (Authentication, Users, Invite user). Then enter the same email here to link them as a client.</p>
+ <form id="cf" novalidate class="pbar"><div><label for="ce">Email *</label><input id="ce" type="email"></div><div><label for="cn">Name *</label><input id="cn"></div><div><label for="cb">Business</label><input id="cb"></div><div><label for="cp">Phone</label><input id="cp"></div><div style="align-self:end"><button class="btn">Link client</button></div></form><div class="err" id="cfe" role="alert"></div>
+ <h2 style="margin-top:1.5rem">Client accounts</h2>${C.accts.length?C.accts.map(a=>{const mine=P.filter(p=>p.client_user_id===a.user_id);return `<article class="lead"><div><b>${esc(a.name)}</b><small>${esc(a.business_name||'')}</small><small>${a.active?'Active':'Access revoked'}</small></div><div>${mine.length?mine.map(p=>`<div>${esc(p.name)} <button class="btn s" data-cl="unassign" data-id="${p.id}" style="padding:.1rem .6rem;min-height:32px">Remove</button></div>`).join(''):'<small>No projects assigned</small>'}<select data-asg="${a.user_id}" aria-label="Assign a project to ${esc(a.name)}" style="margin-top:.4rem"><option value="">Assign project...</option>${opt(P.filter(p=>p.client_user_id!==a.user_id))}</select></div><div></div><div class="acts"><button class="btn ${a.active?'d':'s'}" data-cl="toggle" data-id="${a.user_id}">${a.active?'Revoke':'Restore'}</button></div></article>`}).join(''):'<p class="empty">No client accounts yet.</p>'}
+ <h2 style="margin-top:1.5rem">Publish a project update</h2><form id="uf" novalidate class="pbar"><div><label for="up">Project</label><select id="up">${opt(P)}</select></div><div><label for="ut">Title *</label><input id="ut"></div><div style="grid-column:1/-1"><label for="ub">Details (shown to the client)</label><textarea id="ub" rows="2"></textarea></div><div><button class="btn">Publish update</button></div></form><div class="err" id="ufe" role="alert"></div>
+ <h2 style="margin-top:1.5rem">Support requests</h2>${C.reqs.length?C.reqs.map(r=>{const a=C.accts.find(x=>x.user_id===r.user_id),p=P.find(x=>x.id===r.project_id);return `<article class="c" style="margin-bottom:.7rem"><b style="font-size:1rem">${esc(r.title)}</b> <span class="pill">${esc(r.request_type)}</span> <span class="pill">${esc(r.priority)}</span><small>${esc(a?.name||'')} | ${esc(p?.name||'')} | ${fmtT(r.created_at)}</small><p>${esc(r.description)}</p><div class="pbar"><div><label for="s${r.id}">Status</label><select id="s${r.id}">${RS.map(s=>`<option${s===r.status?' selected':''}>${s}</option>`).join('')}</select></div><div style="grid-column:span 2"><label for="r${r.id}">Response to client</label><textarea id="r${r.id}" rows="2">${esc(r.admin_response||'')}</textarea></div><div style="align-self:end"><button class="btn" data-cl="resp" data-id="${r.id}">Save response</button></div></div></article>`}).join(''):'<p class="empty">No support requests.</p>'}`}
+function bind(){const f=$('#cf');if(f)f.onsubmit=async e=>{e.preventDefault();const g=i=>$('#'+i).value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('ce'))||!g('cn')){$('#cfe').textContent='Enter a valid email and a name.';return}
+  const {error}=await sb.rpc('admin_link_client',{p_email:g('ce'),p_name:g('cn'),p_business:g('cb'),p_phone:g('cp')});if(error){$('#cfe').textContent=error.message;return}note='Client linked.';await load();render()};
+ const u=$('#uf');if(u)u.onsubmit=async e=>{e.preventDefault();if(!$('#ut').value.trim()||!$('#up').value){$('#ufe').textContent='Choose a project and enter a title.';return}
+  const {error}=await sb.from('project_updates').insert({project_id:$('#up').value,title:$('#ut').value.trim(),body:$('#ub').value.trim()||null});if(error){$('#ufe').textContent=error.message;return}note='Update published to the client.';await load();render()};
+ document.querySelectorAll('[data-asg]').forEach(s=>s.onchange=async()=>{if(!s.value)return;const {error}=await sb.from('projects').update({client_user_id:s.dataset.asg}).eq('id',s.value);note=error?'Error: '+error.message:'Project assigned.';await PM.load();render()})}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-cl]');if(!b)return;const a=b.dataset.cl,id=b.dataset.id;let r;
+ if(a==='toggle'){const x=C.accts.find(y=>y.user_id===id);r=await sb.from('client_accounts').update({active:!x.active}).eq('user_id',id)}
+ else if(a==='unassign')r=await sb.from('projects').update({client_user_id:null}).eq('id',id);
+ else if(a==='resp')r=await sb.from('support_requests').update({status:$('#s'+id).value,admin_response:$('#r'+id).value.trim()||null}).eq('id',id);
+ note=r.error?'Error: '+r.error.message:'Saved.';await PM.load();await load();render()});
+return {load,html,bind,accounts:()=>C.accts}})();
+
+const EQ=(()=>{
+const Q={rows:[],att:[],f:'',err:'',sel:null};
+async function load(){const r=await Promise.all([sb.from('notification_deliveries').select('*').order('created_at',{ascending:false}).limit(200),sb.from('email_delivery_attempts').select('*').order('created_at',{ascending:false}).limit(300)]);
+ const e=r.find(x=>x.error);Q.err=e?e.error.message:'';if(!e)[Q.rows,Q.att]=r.map(x=>x.data)}
+const who=id=>{const a=(typeof CL!=='undefined'&&CL.accounts)?CL.accounts().find(x=>x.user_id===id):null;return a?a.name:'Admin or client'};
+const label=r=>r.last_error&&r.last_error.startsWith('skipped')?'Skipped':({queued:'Pending',retry:'Retry scheduled',sending:'Processing',sent:'Sent',failed:'Failed',delivered:'Delivered'})[r.status]||r.status;
+function html(){if(Q.err)return `<div class="msg bad" role="alert">Could not load the email queue: ${esc(Q.err)}</div>`;
+ const c=s=>Q.rows.filter(r=>s.includes(r.status)).length,t=(l,v)=>`<div class="c"><b>${v}</b><span>${l}</span></div>`;
+ const rows=Q.rows.filter(r=>!Q.f||(Q.f==='pending'?['queued','retry'].includes(r.status):r.status===Q.f));
+ return `<h2>Email queue</h2><div class="cards">${t('Pending',c(['queued','retry']))}${t('Processing',c(['sending']))}${t('Sent',c(['sent']))}${t('Failed',c(['failed']))}</div>
+ <p class="msg" style="font-size:.9rem">Sent means the provider accepted the email. Delivery is not confirmed. Emails go out only when the send-emails function and its schedule are set up.</p>
+ <div style="max-width:240px"><label for="eqf">Filter by status</label><select id="eqf"><option value="">All</option>${[['pending','Pending'],['sending','Processing'],['sent','Sent'],['failed','Failed']].map(([v,l])=>`<option value="${v}"${Q.f===v?' selected':''}>${l}</option>`).join('')}</select></div><div style="margin-top:1rem"></div>
+ ${rows.length?rows.map(r=>`<article class="lead"><div><b>${esc(r.subject)}</b><small>${esc(who(r.recipient_user_id))} | ${fmtT(r.created_at)}</small></div><div><span class="pill">${label(r)}</span><small>Attempts: ${r.attempts}/5</small><small>Last processed: ${r.last_attempt_at?fmtT(r.last_attempt_at):'Never'}</small></div><div><small>${esc(r.last_error||'No error')}</small></div><div class="acts"><button class="btn s" data-eq="view" data-id="${r.id}">Details</button>${r.status==='failed'&&!r.permanent?`<button class="btn" data-eq="retry" data-id="${r.id}">Retry</button>`:''}</div></article>`).join(''):'<p class="empty">No emails in the queue.</p>'}`}
+function bind(){const f=$('#eqf');if(f)f.onchange=()=>{Q.f=f.value;render()}}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-eq]');if(!b)return;const r=Q.rows.find(x=>x.id===b.dataset.id);
+ if(b.dataset.eq==='retry'){b.disabled=true;const {error}=await sb.rpc('admin_retry_email',{p_id:r.id});note=error?'Could not retry: '+error.message:'Email re-queued.';await load();render()}
+ else{const a=Q.att.filter(x=>x.delivery_id===r.id);$('#dt').textContent='Email details';$('#db').innerHTML=`<dl><dt>Subject</dt><dd>${esc(r.subject)}</dd><dt>Status</dt><dd>${label(r)}</dd><dt>Retries used</dt><dd>${r.attempts} of 5</dd><dt>Next attempt</dt><dd>${r.status==='retry'?fmtT(r.next_attempt_at):'None'}</dd><dt>Provider message ID</dt><dd>${esc(r.provider_message_id||'None')}</dd><dt>Sent at</dt><dd>${r.sent_at?fmtT(r.sent_at):'Not sent'}</dd><dt>Last error</dt><dd>${esc(r.last_error||'None')}</dd></dl><h3 style="margin-top:1rem">Recent delivery attempts</h3>${a.length?a.map(x=>`<div>${fmtT(x.created_at)}: attempt ${x.attempt}, ${esc(x.outcome)}${x.http_status?' (HTTP '+x.http_status+')':''}${x.error?' - '+esc(x.error):''}</div>`).join(''):'<p class="empty">No attempts yet.</p>'}<div class="acts" style="margin-top:1rem"><button class="btn s" data-a="close">Close</button></div>`;dlg.showModal()}});
+return {load,html,bind}})();
+
+const NT=(()=>{
+const N={list:[],prefs:{},open:false,err:'',uid:null};let go=()=>{};
+const KEYS=[['project_updates','Important project updates'],['support_updates','Support request updates'],['deadline_reminders','Deadline reminders'],['payment_updates','Payment record updates'],['email_enabled','Email notifications'],['inapp_enabled','In-app notifications']];
+async function load(){const {data:{user}}=await sb.auth.getUser();if(!user)return;N.uid=user.id;
+ const r=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50);N.list=r.data||[];N.err=r.error?r.error.message:'';
+ const p=await sb.from('notification_preferences').select('*').eq('user_id',N.uid).maybeSingle();N.prefs=p.data||Object.fromEntries(KEYS.map(k=>[k[0],true]))}
+const unread=()=>N.list.filter(n=>!n.read_at).length;
+const when=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+const bell=()=>`<button class="btn s" data-nt="toggle" aria-expanded="${N.open}" aria-controls="ntp" aria-label="Notifications, ${unread()} unread"><span aria-hidden="true">&#128276;</span> <span>${unread()}</span></button>`;
+const panel=()=>!N.open?'':`<section id="ntp" class="msg" aria-label="Notifications"><div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center"><h2 style="margin:0">Notifications</h2><button class="btn s" data-nt="all" ${unread()?'':'disabled'}>Mark all as read</button></div>${N.err?`<p class="err" role="alert">${esc(N.err)}</p>`:''}
+ ${N.list.length?N.list.map(n=>`<div style="padding:.6rem 0;border-top:1px solid var(--line);${n.read_at?'opacity:.7':''}"><b>${n.read_at?'':'&#9679; '}${esc(n.title)}</b><div style="color:var(--mut)">${esc(n.body||'')}</div><small style="color:var(--mut)">${when(n.created_at)}</small><div class="acts" style="margin-top:.3rem">${n.project_id||n.request_id?`<button class="btn s" data-nt="open" data-id="${n.id}">Open</button>`:''}${n.read_at?'':`<button class="btn s" data-nt="read" data-id="${n.id}">Mark read</button>`}</div></div>`).join(''):'<p class="empty">No notifications yet.</p>'}
+ <details style="margin-top:.8rem"><summary>Notification preferences</summary><form id="ntf" style="margin-top:.6rem">${KEYS.map(k=>`<label style="display:flex;gap:.6rem;align-items:center"><input type="checkbox" name="${k[0]}" ${N.prefs[k[0]]!==false?'checked':''} style="width:auto;min-height:0"> ${k[1]}</label>`).join('')}<small style="color:var(--mut)">Sign-in and password emails are sent by the account system and are not affected by these settings. Notifications refresh when you open this panel or reload the page.</small><div class="err" id="nte" role="alert"></div><button class="btn">Save preferences</button></form></details></section>`;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-nt]');if(!b)return;const a=b.dataset.nt,id=b.dataset.id;
+ if(a==='toggle'){N.open=!N.open;if(N.open)await load();render()}
+ else if(a==='read'){await sb.rpc('mark_notifications_read',{p_ids:[id]});const n=N.list.find(x=>x.id===id);if(n)n.read_at=new Date().toISOString();render()}
+ else if(a==='all'){await sb.rpc('mark_all_notifications_read');N.list.forEach(n=>n.read_at=n.read_at||new Date().toISOString());render()}
+ else if(a==='open'){const n=N.list.find(x=>x.id===id);if(n&&!n.read_at){await sb.rpc('mark_notifications_read',{p_ids:[id]});n.read_at=new Date().toISOString()}N.open=false;go(n)}});
+document.addEventListener('submit',async e=>{if(e.target.id!=='ntf')return;e.preventDefault();const f=e.target,rec={user_id:N.uid,updated_at:new Date().toISOString()};
+ KEYS.forEach(k=>rec[k[0]]=f.elements[k[0]].checked);const {error}=await sb.from('notification_preferences').upsert(rec);
+ if(error){$('#nte').textContent='Could not save: '+error.message;return}N.prefs=rec;$('#nte').textContent='';alert('Preferences saved.')});
+return {load,bell,panel,onOpen:f=>go=f}})();
+NT.onOpen(n=>{if(n.request_id)tab='clients';else if(n.project_id){PM.openProject(n.project_id);tab='projects'}render()});
+if(!SUPABASE_URL||!SUPABASE_ANON_KEY||!window.supabase)setup();else{sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);boot();}
+</script></body></html>

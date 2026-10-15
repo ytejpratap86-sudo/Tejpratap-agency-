@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Client Portal | Tej Pratap</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A1428;--bg2:#0F1D3A;--line:rgba(255,255,255,.14);--blue:#2F6BFF;--b2:#6C96FF;--txt:#EEF3FF;--mut:#AEBBD8;--g:rgba(255,255,255,.06)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:400 1rem/1.55 "DM Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:Sora,system-ui,sans-serif;margin:0 0 .6rem}h1{font-size:1.4rem}h2{font-size:1.15rem}
+:focus-visible{outline:3px solid var(--b2);outline-offset:2px}
+.wrap{width:min(960px,100% - 1.5rem);margin:0 auto;padding:1rem 0 3rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.8rem 0}
+.btn{background:var(--blue);color:#fff;border:1px solid transparent;border-radius:10px;padding:.6rem 1rem;font:700 .95rem "DM Sans",sans-serif;cursor:pointer;min-height:44px}
+.btn.s{background:var(--g);border-color:var(--line)}.btn:disabled{opacity:.6;cursor:wait}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:1rem}.tabs button{flex:none}.tabs [aria-selected=true]{background:var(--blue)}
+.cards{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:1rem}
+.c,.row{background:var(--g);border:1px solid var(--line);border-radius:14px;padding:1rem}.row{margin-bottom:.7rem}
+.c b{display:block;font:700 1.4rem Sora,sans-serif}.c span,small{color:var(--mut);font-size:.88rem;display:block}
+.pb{height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:.3rem 0}.pb i{display:block;height:100%;background:var(--blue)}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:.1rem .6rem;font-size:.8rem;color:var(--b2)}
+input,select,textarea{width:100%;background:rgba(255,255,255,.07);color:#fff;border:1px solid var(--line);border-radius:10px;padding:.65rem .8rem;font:inherit;min-height:44px}select option{color:#000}
+[aria-invalid=true]{border-color:#FF7A8A}label{display:block;font-weight:500;margin-bottom:.2rem}form{display:grid;gap:.7rem}
+.err{color:#FF9AA6;font-size:.88rem;min-height:1.1em}.msg{padding:.9rem;border-radius:12px;border:1px solid var(--line);background:var(--g);margin:.8rem 0}.msg.bad{border-color:#FF7A8A}.msg.ok{border-color:#3CC88C}
+.empty{text-align:center;color:var(--mut);padding:1.6rem}.box{max-width:400px;margin:12vh auto 0}
+.two{display:grid;gap:.7rem;grid-template-columns:1fr 1fr}@media(max-width:640px){.two{grid-template-columns:1fr}}
+a{color:var(--b2)}
+</style></head><body>
+<div class="wrap" id="app"><p class="empty">Loading...</p></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL="https://wjtvbowpjpebycuyuzmj.supabase.co",SUPABASE_KEY="sb_publishable_o3dHmj4AjDxDYhoREgU3xg_MKYRJ6jV"; // public key; access is enforced by database RLS
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fD=d=>d?new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'Not set';
+const fT=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+const mon=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2});
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let me,D={projects:[],tasks:[],pays:[],ups:[],reqs:[]},tab='Dashboard',cur=null,msg='';
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const box=h=>app.innerHTML=`<div class="box">${h}</div>`;
+function login(m='',ok=false){box(`<h1>Client sign in</h1><form id="lf" novalidate><div><label for="e">Email</label><input id="e" type="email" autocomplete="username"><div class="err" id="ee"></div></div><div><label for="p">Password</label><input id="p" type="password" autocomplete="current-password"><div class="err" id="pe"></div></div><div class="msg ${ok?'ok':m?'bad':''}" role="status" ${m?'':'hidden'}>${esc(m)}</div><button class="btn" id="lb">Sign in</button><button type="button" class="btn s" id="fp">Forgot password</button></form><p><small>Accounts are created by the agency. No account yet? Contact Tej Pratap.</small></p>`);
+ $('#lf').onsubmit=async e=>{e.preventDefault();const em=$('#e').value.trim(),pw=$('#p').value;let bad=0;
+  $('#ee').textContent=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)?'':(bad=1,'Enter a valid email.');$('#pe').textContent=pw?'':(bad=1,'Enter your password.');if(bad)return;
+  const b=$('#lb');b.disabled=true;b.textContent='Signing in...';const {error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(error){login('Sign in failed. Check your email and password.');}else boot();};
+ $('#fp').onclick=async()=>{const em=$('#e').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){$('#ee').textContent='Enter your email first.';return $('#e').focus()}
+  await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});login('If that email has an account, a reset link has been sent.',true);};}
+function newPw(){box(`<h1>Set a new password</h1><form id="nf" novalidate><div><label for="n1">New password (8+ characters)</label><input id="n1" type="password" autocomplete="new-password"></div><div class="err" id="ne" role="alert"></div><button class="btn">Save password</button></form>`);
+ $('#nf').onsubmit=async e=>{e.preventDefault();const v=$('#n1').value;if(v.length<8){$('#ne').textContent='Use at least 8 characters.';return}
+  const {error}=await sb.auth.updateUser({password:v});if(error){$('#ne').textContent='Could not update: '+error.message;return}history.replaceState(null,'',location.pathname);boot();};}
+async function boot(){const {data:{session}}=await sb.auth.getSession();if(!session)return login();
+ const {data,error}=await sb.from('client_accounts').select('*').eq('user_id',session.user.id).maybeSingle();
+ if(error||!data){await sb.auth.signOut();return login('This account does not have client portal access.');}
+ me=data;await load();}
+async function load(){app.innerHTML='<p class="empty">Loading your projects...</p>';
+ const q=(t,o)=>{let x=sb.from(t).select('*');return o?x.order(o,{ascending:false}):x};
+ const r=await Promise.all([q('client_projects'),q('client_tasks'),q('client_payments','paid_on'),q('project_updates','created_at'),q('support_requests','created_at')]);
+ const e=r.find(x=>x.error);if(e){app.innerHTML=`<div class="msg bad" role="alert">Could not load your data: ${esc(e.error.message)} <button class="btn s" onclick="load()">Retry</button></div>`;return}
+ [D.projects,D.tasks,D.pays,D.ups,D.reqs]=r.map(x=>x.data);await NT.load();render();}
+const NT=(()=>{
+const N={list:[],prefs:{},open:false,err:'',uid:null};let go=()=>{};
+const KEYS=[['project_updates','Important project updates'],['support_updates','Support request updates'],['deadline_reminders','Deadline reminders'],['payment_updates','Payment record updates'],['email_enabled','Email notifications'],['inapp_enabled','In-app notifications']];
+async function load(){const {data:{user}}=await sb.auth.getUser();if(!user)return;N.uid=user.id;
+ const r=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50);N.list=r.data||[];N.err=r.error?r.error.message:'';
+ const p=await sb.from('notification_preferences').select('*').eq('user_id',N.uid).maybeSingle();N.prefs=p.data||Object.fromEntries(KEYS.map(k=>[k[0],true]))}
+const unread=()=>N.list.filter(n=>!n.read_at).length;
+const when=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+const bell=()=>`<button class="btn s" data-nt="toggle" aria-expanded="${N.open}" aria-controls="ntp" aria-label="Notifications, ${unread()} unread"><span aria-hidden="true">&#128276;</span> <span>${unread()}</span></button>`;
+const panel=()=>!N.open?'':`<section id="ntp" class="msg" aria-label="Notifications"><div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center"><h2 style="margin:0">Notifications</h2><button class="btn s" data-nt="all" ${unread()?'':'disabled'}>Mark all as read</button></div>${N.err?`<p class="err" role="alert">${esc(N.err)}</p>`:''}
+ ${N.list.length?N.list.map(n=>`<div style="padding:.6rem 0;border-top:1px solid var(--line);${n.read_at?'opacity:.7':''}"><b>${n.read_at?'':'&#9679; '}${esc(n.title)}</b><div style="color:var(--mut)">${esc(n.body||'')}</div><small style="color:var(--mut)">${when(n.created_at)}</small><div class="acts" style="margin-top:.3rem">${n.project_id||n.request_id?`<button class="btn s" data-nt="open" data-id="${n.id}">Open</button>`:''}${n.read_at?'':`<button class="btn s" data-nt="read" data-id="${n.id}">Mark read</button>`}</div></div>`).join(''):'<p class="empty">No notifications yet.</p>'}
+ <details style="margin-top:.8rem"><summary>Notification preferences</summary><form id="ntf" style="margin-top:.6rem">${KEYS.map(k=>`<label style="display:flex;gap:.6rem;align-items:center"><input type="checkbox" name="${k[0]}" ${N.prefs[k[0]]!==false?'checked':''} style="width:auto;min-height:0"> ${k[1]}</label>`).join('')}<small style="color:var(--mut)">Sign-in and password emails are sent by the account system and are not affected by these settings. Notifications refresh when you open this panel or reload the page.</small><div class="err" id="nte" role="alert"></div><button class="btn">Save preferences</button></form></details></section>`;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-nt]');if(!b)return;const a=b.dataset.nt,id=b.dataset.id;
+ if(a==='toggle'){N.open=!N.open;if(N.open)await load();render()}
+ else if(a==='read'){await sb.rpc('mark_notifications_read',{p_ids:[id]});const n=N.list.find(x=>x.id===id);if(n)n.read_at=new Date().toISOString();render()}
+ else if(a==='all'){await sb.rpc('mark_all_notifications_read');N.list.forEach(n=>n.read_at=n.read_at||new Date().toISOString());render()}
+ else if(a==='open'){const n=N.list.find(x=>x.id===id);if(n&&!n.read_at){await sb.rpc('mark_notifications_read',{p_ids:[id]});n.read_at=new Date().toISOString()}N.open=false;go(n)}});
+document.addEventListener('submit',async e=>{if(e.target.id!=='ntf')return;e.preventDefault();const f=e.target,rec={user_id:N.uid,updated_at:new Date().toISOString()};
+ KEYS.forEach(k=>rec[k[0]]=f.elements[k[0]].checked);const {error}=await sb.from('notification_preferences').upsert(rec);
+ if(error){$('#nte').textContent='Could not save: '+error.message;return}N.prefs=rec;$('#nte').textContent='';alert('Preferences saved.')});
+return {load,bell,panel,onOpen:f=>go=f}})();
+
+const pct=p=>p.tasks_total?Math.round(p.tasks_done/p.tasks_total*100):null;
+const bar=p=>{const v=pct(p);return v===null?'<small>Progress will appear once tasks are added</small>':`<div class="pb" role="progressbar" aria-label="Progress" aria-valuenow="${v}" aria-valuemin="0" aria-valuemax="100"><i style="width:${v}%"></i></div><small>${v}% complete</small>`};
+const recv=id=>D.pays.filter(x=>x.project_id===id&&x.confirmed).reduce((s,x)=>s+Number(x.amount),0);
+const nextMs=id=>D.tasks.filter(t=>t.project_id===id&&t.status!=='Completed'&&t.due_date).sort((a,b)=>a.due_date.localeCompare(b.due_date))[0];
+const card=p=>{const m=nextMs(p.id);return `<article class="row"><b>${esc(p.name)}</b> <span class="pill">${esc(p.status)}</span><small>${esc(p.project_type)} | Start ${fD(p.start_date)} | Est. completion ${fD(p.deadline)}</small>${bar(p)}<small>Next milestone: ${m?esc(m.title)+' ('+fD(m.due_date)+')':'None scheduled'}</small><button class="btn s" data-open="${p.id}" style="margin-top:.5rem">Open</button></article>`};
+function pdetail(p){const ts=D.tasks.filter(t=>t.project_id===p.id),ups=D.ups.filter(u=>u.project_id===p.id),py=D.pays.filter(x=>x.project_id===p.id),rc=recv(p.id);
+ return `<button class="btn s" data-back>Back</button><h2 style="margin-top:1rem">${esc(p.name)} <span class="pill">${esc(p.status)}</span></h2>${bar(p)}
+ <h3>Tasks and milestones</h3>${ts.length?ts.map(t=>`<div class="row"><b>${esc(t.title)}</b> <span class="pill">${esc(t.status)}</span><small>Due ${fD(t.due_date)}</small><p>${esc(t.description||'')}</p></div>`).join(''):'<p class="empty">No tasks shared with you yet.</p>'}
+ <h3>Project updates</h3>${ups.length?ups.map(u=>`<div class="row"><b>${esc(u.title)}</b><small>${fT(u.created_at)}</small><p>${esc(u.body||'')}</p></div>`).join(''):'<p class="empty">No updates yet.</p>'}
+ <h3>Payment summary</h3><div class="cards"><div class="c"><b>${mon(p.total_fee)}</b><span>Agreed fee</span></div><div class="c"><b>${mon(rc)}</b><span>Confirmed received</span></div><div class="c"><b>${mon(p.total_fee-rc)}</b><span>Outstanding</span></div></div>
+ ${py.length?py.map(x=>`<div class="row"><b>${mon(x.amount)}</b> <span class="pill">${x.confirmed?'Confirmed':'Not confirmed'}</span><small>${fD(x.paid_on)} | ${esc(x.method||'')}</small></div>`).join(''):'<p class="empty">No payments recorded.</p>'}
+ <p><small>Payment records are entered by the agency and are not verified automatically.</small></p><button class="btn" data-req="${p.id}">Request a revision or support</button>`}
+function reqForm(pid){app.innerHTML=`<button class="btn s" data-back>Back</button><h2 style="margin-top:1rem">New request</h2><form id="rf" novalidate><div><label for="rp">Project</label><select id="rp">${D.projects.map(p=>`<option value="${p.id}"${p.id===pid?' selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div><label for="rt">Title *</label><input id="rt"><div class="err" id="e1"></div></div><div class="two"><div><label for="ry">Request type</label><select id="ry">${['Design Revision','Bug Report','Content Update','General Question','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div><div><label for="rr">Priority</label><select id="rr"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><div><label for="rd">Description *</label><textarea id="rd" rows="5"></textarea><div class="err" id="e2"></div></div><p><small>File attachments are not available yet.</small></p><div class="err" id="fe" role="alert"></div><button class="btn" id="rb">Submit request</button></form>`;
+ $('#rf').onsubmit=async e=>{e.preventDefault();const t=$('#rt').value.trim(),d=$('#rd').value.trim();$('#e1').textContent=t?'':'Enter a title.';$('#e2').textContent=d?'':'Describe your request.';if(!t||!d)return;
+  const b=$('#rb');b.disabled=true;b.textContent='Submitting...';const {error}=await sb.from('support_requests').insert({user_id:me.user_id,project_id:$('#rp').value,title:t,request_type:$('#ry').value,description:d,priority:$('#rr').value});
+  if(error){$('#fe').textContent='Could not submit: '+error.message;b.disabled=false;b.textContent='Submit request';return}msg='Request submitted.';tab='Support';cur=null;await load();};}
+function render(){const t=today(),open=D.projects.filter(p=>!['Completed','Cancelled'].includes(p.status));let b='';
+ if(cur){const p=D.projects.find(x=>x.id===cur);b=p?pdetail(p):'';}
+ else if(tab==='Dashboard'){const dl=D.projects.filter(p=>p.deadline&&p.deadline>=t&&!['Completed','Cancelled'].includes(p.status)).sort((a,b)=>a.deadline.localeCompare(b.deadline)),pend=D.reqs.filter(r=>r.status!=='Resolved'),rec=D.ups.slice(0,5);
+  b=`<h2>Welcome, ${esc(me.name)}</h2><p>${esc(me.business_name||'')}</p><div class="cards"><div class="c"><b>${open.length}</b><span>Active projects</span></div><div class="c"><b>${dl.length}</b><span>Upcoming deadlines</span></div><div class="c"><b>${pend.length}</b><span>Open requests</span></div></div>${open.length?open.map(card).join(''):'<p class="empty">You have no active projects yet. They will appear here once the agency adds them.</p>'}<h3>Recent updates</h3>${rec.length?rec.map(u=>`<div class="row"><b>${esc(u.title)}</b><small>${fT(u.created_at)}</small></div>`).join(''):'<p class="empty">No updates yet.</p>'}<h3>Pending actions</h3>${pend.length?pend.map(r=>`<div class="row">${esc(r.title)} <span class="pill">${esc(r.status)}</span></div>`).join(''):'<p class="empty">Nothing needs your attention.</p>'}`}
+ else if(tab==='My Projects')b=D.projects.length?D.projects.map(card).join(''):'<p class="empty">No projects have been shared with you yet.</p>';
+ else if(tab==='Support')b=`<button class="btn" data-req="" ${D.projects.length?'':'disabled'}>New request</button>${D.reqs.length?D.reqs.map(r=>`<article class="row"><b>${esc(r.title)}</b> <span class="pill">${esc(r.status)}</span><small>${esc(r.request_type)} | ${esc(r.priority)} | ${fT(r.created_at)}</small><p>${esc(r.description)}</p>${r.admin_response?`<div class="msg"><b>Reply from the agency</b><p>${esc(r.admin_response)}</p></div>`:''}</article>`).join(''):'<p class="empty">No requests yet.</p>'}`;
+ else b=`<h2>Profile</h2><form id="pf" novalidate><div><label for="pn">Name *</label><input id="pn" value="${esc(me.name)}"><div class="err" id="pne"></div></div><div><label for="pb">Business name</label><input id="pb" value="${esc(me.business_name||'')}" disabled></div><div><label for="pm">Email</label><input id="pm" value="" disabled placeholder="Your sign-in email"></div><div><label for="pp">Phone</label><input id="pp" type="tel" value="${esc(me.phone||'')}"></div><div class="err" id="pfe" role="alert"></div><button class="btn">Save profile</button><small>Business name and access are managed by the agency.</small></form>`;
+ app.innerHTML=`<div class="top"><h1>Client Portal</h1><div style="display:flex;gap:.5rem">${NT.bell()}<button class="btn s" id="out">Sign out</button></div></div>${NT.panel()}<div class="tabs" role="tablist">${['Dashboard','My Projects','Support','Profile'].map(x=>`<button class="btn s" role="tab" aria-selected="${tab===x&&!cur}" data-tab="${x}">${x}</button>`).join('')}</div>${msg?`<div class="msg ok" role="status">${esc(msg)}</div>`:''}${b}`;msg='';
+ sb.auth.getUser().then(({data})=>{const m=$('#pm');if(m)m.value=data.user?.email||''});
+ $('#out').onclick=async()=>{await sb.auth.signOut();me=null;cur=null;login();};
+ const pf=$('#pf');if(pf)pf.onsubmit=async e=>{e.preventDefault();const n=$('#pn').value.trim(),p=$('#pp').value.trim();if(!n){$('#pne').textContent='Enter your name.';return}if(p&&!/^[+\d][\d\s()-]{6,17}$/.test(p)){$('#pfe').textContent='Enter a valid phone number or leave it blank.';return}
+  const {error}=await sb.rpc('update_my_profile',{p_name:n,p_phone:p||null});if(error){$('#pfe').textContent='Could not save: '+error.message;return}me.name=n;me.phone=p||null;msg='Profile saved.';render();};}
+app.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.tab){tab=b.dataset.tab;cur=null;render()}else if(b.dataset.open){cur=b.dataset.open;render();window.scrollTo(0,0)}else if(b.hasAttribute('data-back')){cur=null;render()}else if(b.dataset.req!==undefined)reqForm(b.dataset.req||(D.projects[0]||{}).id)});
+NT.onOpen(n=>{if(n.request_id){tab='Support';cur=null}else if(n.project_id){cur=n.project_id}render()});
+sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')newPw()});
+if(location.hash.includes('type=recovery'))newPw();else boot();
+</script></body></html>
