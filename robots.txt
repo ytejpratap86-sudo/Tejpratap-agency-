@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /portal.html
+Sitemap: https://tejwebhub.netlify.app/sitemap.xml
